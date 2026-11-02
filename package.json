@@ -15,8 +15,8 @@
   "scripts": {
     "generate": "node scripts/embed-native.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check index.server.ts index.client.tsx server client shared scripts tests",
-    "format": "biome check --write index.server.ts index.client.tsx server client shared scripts tests",
+    "lint": "biome check index.server.ts index.client.tsx vitest.config.ts server client shared scripts tests",
+    "format": "biome check --write index.server.ts index.client.tsx vitest.config.ts server client shared scripts tests",
     "test": "vitest run --maxWorkers=1",
     "check": "node scripts/embed-native.mjs --check && npm run typecheck && npm run lint && npm test",
     "build:native": "tsx scripts/build-native.ts",

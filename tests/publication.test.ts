@@ -19,6 +19,18 @@ it("ships bilingual listing metadata and a real PNG interface preview", async ()
   }
 });
 
+it("locks the optional extraction tree for clean macOS and Linux CI installs", async () => {
+  const lock = JSON.parse(await readFile("package-lock.json", "utf8"));
+  expect(lock.packages["node_modules/msgpackr-extract"].version).toBe("3.0.6");
+  const optional = lock.packages["node_modules/msgpackr-extract"].optionalDependencies;
+  for (const name of Object.keys(optional)) {
+    const entry = lock.packages[`node_modules/${name}`];
+    expect(entry?.version).toBeTruthy();
+    expect(entry?.integrity).toMatch(/^sha512-/);
+    expect(entry?.resolved).toMatch(/^https:\/\/registry\.npmjs\.org\//);
+  }
+});
+
 it("keeps installation instructions out of overviews and needs no runtime dependency setup", async () => {
   for (const name of ["OVERVIEW.md", "OVERVIEW.zh-CN.md"]) {
     const overview = await readFile(name, "utf8");

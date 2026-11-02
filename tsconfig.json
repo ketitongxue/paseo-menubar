@@ -12,5 +12,5 @@
     "types": ["node"],
     "jsx": "react-jsx"
   },
-  "include": ["index.*", "server", "client", "shared", "scripts", "tests"]
+  "include": ["index.*", "vitest.config.ts", "server", "client", "shared", "scripts", "tests"]
 }
