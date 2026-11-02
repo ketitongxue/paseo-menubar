@@ -34,7 +34,7 @@
 - **macOS 13+**，本机有图形登录会话。Apple Silicon 已实测；Intel 有本机编译路径，尚未经 Intel 硬件验证。
 - daemon 和连接客户端均为 **Paseo >=0.14.0-beta.1 <0.16.0**。真实编译器/IPC 测试覆盖 0.14.0-beta.1 和 0.15.0-beta.1。
 - Apple Command Line Tools（`xcrun swiftc`）。没有时，由你运行 `xcode-select --install` 安装。首次启用编译原生小组件，后续复用源码哈希 + CPU 架构缓存。
-- 开发检查使用 Node.js >=22.12；源码安装没有额外的运行时 npm 依赖，SDK 和 Zod 由 Paseo 提供。
+- 开发检查使用 Node.js >=22.12 和 npm 11.19.1（见 `packageManager`）；源码安装没有额外的运行时 npm 依赖，SDK 和 Zod 由 Paseo 提供。npm 10 无法正确消费该开发依赖树，CI 对 Node 22/24 都显式使用 npm 11.19.1。
 
 **安装在 daemon 所在的 Mac 上。** 服务端插件不能在远程 Linux 主机上绘制你本机 Mac 的菜单栏，也不会把多个 daemon 合并成一个菜单栏。非 macOS 宿主安全地返回 unsupported，不启动进程。每个 daemon 只安装一个实例。
 
@@ -44,6 +44,7 @@
 
 ```bash
 cd "/absolute/path/to/paseo-menubar"
+# 本地开发检查请先确认 npm --version 为 11.19.1 或更高版本
 npm ci --ignore-scripts
 npm run check
 

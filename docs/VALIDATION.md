@@ -1,6 +1,6 @@
 # Validation scope
 
-The initial public release targets Paseo `>=0.14.0-beta.1 <0.16.0` and macOS 13+. Local validation used Apple Silicon, Node 26, and Apple Swift 6.4. Check the published CI run for its actual runner architecture and Node/Swift versions; local results alone are not evidence that a CI matrix passed.
+The initial public release targets Paseo `>=0.14.0-beta.1 <0.16.0` and macOS 13+. Local validation used Apple Silicon, Node 26, npm 11.19.1, and Apple Swift 6.4. CI explicitly uses npm 11.19.1 on Node 22 and 24; Node 22's bundled npm 10 rejects optional-platform entries in this development dependency tree. Check the published CI run for its actual runner architecture and Node/Swift versions; local results alone are not evidence that a CI matrix passed.
 
 ## Automated coverage
 

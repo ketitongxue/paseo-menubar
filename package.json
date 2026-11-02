@@ -10,7 +10,8 @@
   },
   "homepage": "https://github.com/ketitongxue/paseo-menubar#readme",
   "bugs": { "url": "https://github.com/ketitongxue/paseo-menubar/issues" },
-  "engines": { "node": ">=22.12.0" },
+  "engines": { "node": ">=22.12.0", "npm": ">=11.19.1" },
+  "packageManager": "npm@11.19.1",
   "files": ["paseo-plugin.json", "index.server.ts", "index.client.tsx", "server", "client", "shared", "native", "assets", "docs", "OVERVIEW.md", "OVERVIEW.*.md", "README.md", "SECURITY.md", "LICENSE"],
   "scripts": {
     "generate": "node scripts/embed-native.mjs",
