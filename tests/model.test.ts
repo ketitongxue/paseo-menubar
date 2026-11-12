@@ -31,11 +31,12 @@ describe("task projection", () => {
     ).toBe("permission");
   });
 
-  it("never counts archived, closed or internal helpers", () => {
+  it("never counts archived, closed, internal or background helpers", () => {
     for (const value of [
       agent({ archivedAt: "2026-01-01" }),
       agent({ status: "closed" }),
       agent({ internal: true }),
+      { ...agent(), background: true },
     ])
       expect(taskFromAgent(value)).toBeNull();
   });

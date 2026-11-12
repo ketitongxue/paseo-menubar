@@ -1,6 +1,6 @@
 # Validation scope
 
-The initial public release targets Paseo `>=0.14.0-beta.1 <0.16.0` and macOS 13+. Local validation used Apple Silicon, Node 26, npm 11.19.1, and Apple Swift 6.4. CI explicitly uses npm 11.19.1 on Node 22 and 24; Node 22's bundled npm 10 rejects optional-platform entries in this development dependency tree. Check the published CI run for its actual runner architecture and Node/Swift versions; local results alone are not evidence that a CI matrix passed.
+Version 0.1.1 targets Paseo `>=0.14.0-beta.1 <0.17.0` and macOS 13+, adding compatibility with the locally installed 0.16.0-beta.2 without dropping the previous minimum. Local validation used Apple Silicon, Node 26, npm 11.19.1, and Apple Swift 6.4. CI explicitly uses npm 11.19.1 on Node 22 and 24; Node 22's bundled npm 10 rejects optional-platform entries in this development dependency tree. Check the published CI run for its actual runner architecture and Node/Swift versions; local results alone are not evidence that a CI matrix passed.
 
 ## Automated coverage
 
@@ -8,10 +8,20 @@ The initial public release targets Paseo `>=0.14.0-beta.1 <0.16.0` and macOS 13+
 - One daemon-owned subscription for concurrent bootstrap requests; pagination with buffered upserts/removals; snapshot replacement; superseded-request cancellation; offline state and recovery; reconciliation and teardown; non-starving 100 ms event throttling.
 - Client bootstrap retries and cancellation; native bridge startup deduplication, bounded commands, backpressure coalescing, crash retry limit, shutdown and environment filtering.
 - Actual Swift compilation, presentation output, invalid-frame rejection, immutable cache reuse and private directories. `--check-live` uses the SAME POSIX stdin pump as the GUI: several sub-buffer-size frames must render while stdin remains open. This regression catches Foundation pipe reads that can wait for a full buffer or EOF.
-- Paseo 0.14.0-beta.1 and 0.15.0-beta.1 real compilers, production-only source compilation without development dependencies, and real plugin subprocess IPC. Only the OS helper boundary is replaced for the IPC test; the real entry, observer, bridge, host SDK and compiler run. Helper PID termination is checked after unload.
+- Real SDK types, compilers, production-only compilation without development dependencies, and plugin subprocess IPC for Paseo 0.14.0-beta.1, 0.15.0-beta.1, 0.15.4, 0.16.0-beta.1 and 0.16.0-beta.2. Only the OS helper boundary is replaced for the IPC test; the real entry, observer, bridge, host SDK and compiler run. Helper PID termination is checked after unload.
 - Listing media, bilingual overview packaging, and absence of runtime npm preparation.
 
 `npm run check` is the canonical local check. The source consistency check ensures that the shipped generated TypeScript string is byte-identical to `native/main.swift`.
+
+## v0.1.1 compatibility update
+
+The installed desktop app and daemon both reported 0.16.0-beta.2. The original plugin failed before loading because of its `<0.16.0` requirement. This update expands the upper bound only after checking five real published SDK/runtime versions and continues to reject 0.17 prereleases and newer unsupported hosts.
+
+`npm run compatibility` resolves plugin, client and protocol declarations from each selected server package, never substitutes the baseline SDK for another host, and type-checks the shipped server/client/shared modules. Runtime integration tests emit the host's actual lifecycle event before any client RPC, confirm notification bootstrap and subscription deduplication, then exercise live updates, hidden background helpers where supported, removal and teardown. The locally passing suite has 46 tests plus the five SDK type checks.
+
+The shared projection explicitly excludes the newer `background` flag as well as legacy `internal`; it still discards metadata and error bodies. Legacy notification registration remains supported by the inspected 0.14–0.16 hosts and is tested through their modern event mapping. No mutation hook, provider action or new network destination was introduced. The native Swift UI and preview image are unchanged; the application cache/plist version advances to 0.1.1.
+
+The public Git smoke script selects the same-version published client and daemon-control helper and defaults to an isolated 0.16.0-beta.2 daemon. Its expected version is checked before installation, so it cannot silently validate against a different installed CLI. Published CI and the release-specific smoke result, not a widened manifest alone, establish the tested coverage. Unlisted intermediate patch releases are not individually exercised.
 
 ## Native preview
 

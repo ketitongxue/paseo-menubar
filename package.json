@@ -1,6 +1,6 @@
 {
   "name": "paseo-menubar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live Paseo task status in the native macOS menu bar.",
   "type": "module",
   "license": "MIT",
@@ -9,17 +9,38 @@
     "url": "git+https://github.com/ketitongxue/paseo-menubar.git"
   },
   "homepage": "https://github.com/ketitongxue/paseo-menubar#readme",
-  "bugs": { "url": "https://github.com/ketitongxue/paseo-menubar/issues" },
-  "engines": { "node": ">=22.12.0", "npm": ">=11.19.1" },
+  "bugs": {
+    "url": "https://github.com/ketitongxue/paseo-menubar/issues"
+  },
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=11.19.1"
+  },
   "packageManager": "npm@11.19.1",
-  "files": ["paseo-plugin.json", "index.server.ts", "index.client.tsx", "server", "client", "shared", "native", "assets", "docs", "OVERVIEW.md", "OVERVIEW.*.md", "README.md", "SECURITY.md", "LICENSE"],
+  "files": [
+    "paseo-plugin.json",
+    "index.server.ts",
+    "index.client.tsx",
+    "server",
+    "client",
+    "shared",
+    "native",
+    "assets",
+    "docs",
+    "OVERVIEW.md",
+    "OVERVIEW.*.md",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
   "scripts": {
     "generate": "node scripts/embed-native.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "biome check index.server.ts index.client.tsx vitest.config.ts server client shared scripts tests",
     "format": "biome check --write index.server.ts index.client.tsx vitest.config.ts server client shared scripts tests",
     "test": "vitest run --maxWorkers=1",
-    "check": "node scripts/embed-native.mjs --check && npm run typecheck && npm run lint && npm test",
+    "compatibility": "tsx scripts/check-compatibility.ts",
+    "check": "node scripts/embed-native.mjs --check && npm run typecheck && npm run compatibility && npm run lint && npm test",
     "build:native": "tsx scripts/build-native.ts",
     "demo": "tsx scripts/demo.ts",
     "screenshot": "tsx scripts/screenshot.ts",
@@ -34,6 +55,9 @@
     "@getpaseo/server": "0.14.0-beta.1",
     "@types/node": "22.20.5",
     "paseo-server-015": "npm:@getpaseo/server@0.15.0-beta.1",
+    "paseo-server-015-stable": "npm:@getpaseo/server@0.15.4",
+    "paseo-server-016-beta1": "npm:@getpaseo/server@0.16.0-beta.1",
+    "paseo-server-016-beta2": "npm:@getpaseo/server@0.16.0-beta.2",
     "pino": "10.4.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

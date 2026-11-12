@@ -6,7 +6,7 @@
 
 ## 使用条件
 
-需要 macOS 13 以上、图形登录会话，以及 daemon 和连接客户端均为 Paseo `>=0.14.0-beta.1 <0.16.0`。插件应装在运行 daemon 的 Mac 上；远程 Linux 上的服务端插件不能绘制本机 Mac 菜单栏。每个 daemon 使用一个实例。Apple Silicon 已在本机验证；Intel 使用本机 Swift 编译路径，尚未经本机 Intel 硬件测试。
+需要 macOS 13 以上、图形登录会话，以及 daemon 和连接客户端均为 Paseo `>=0.14.0-beta.1 <0.17.0`。插件应装在运行 daemon 的 Mac 上；远程 Linux 上的服务端插件不能绘制本机 Mac 菜单栏。每个 daemon 使用一个实例。Apple Silicon 已在本机验证；Intel 使用本机 Swift 编译路径，尚未经本机 Intel 硬件测试。
 
 必须事先安装 Apple Command Line Tools。首次启用时，插件通过现有的 `/usr/bin/xcrun swiftc` 编译随包提供、可审阅的 Swift 源码，将生成的小组件缓存到本机私有目录。插件不下载软件，也不会替你安装 Command Line Tools。
 
@@ -16,8 +16,8 @@
 
 原生组件仅通过私有进程管道接收任务 ID、清理后的标题、provider、项目目录名、状态、时间和 Paseo 会话链接。插件不会请求会话 timeline、读取账号凭据或向第三方发送任务数据。状态仅驻内存；本机会保留编译后的程序缓存和空闲会话显示偏好。任务标题和项目名可能敏感，会在菜单中可见。
 
-菜单最多列出 100 个任务，但计数覆盖完整的符合条件的目录，优先显示权限请求和异常。授权和任务操作仍在 Paseo 内完成，本插件不会代为批准工具、发消息或中断任务。隐藏菜单栏不会停止任务，重载插件可恢复；停用或卸载插件会停止订阅和原生进程。
+菜单最多列出 100 个任务，但计数覆盖完整的符合条件的目录，优先显示权限请求和异常；归档、已关闭、internal 和 background helper 不计入。授权和任务操作仍在 Paseo 内完成，本插件不会代为批准工具、发消息或中断任务。隐藏菜单栏不会停止任务，重载插件可恢复；停用或卸载插件会停止订阅和原生进程。
 
 当前原生界面使用简体中文。下图使用合成任务，仅捕获预览进程自身的原生视图，不包含生产桌面或真实会话。
 
-![使用合成任务的原生 macOS 菜单](https://raw.githubusercontent.com/ketitongxue/paseo-menubar/v0.1.0/assets/menubar-preview.png)
+![使用合成任务的原生 macOS 菜单](https://raw.githubusercontent.com/ketitongxue/paseo-menubar/v0.1.1/assets/menubar-preview.png)

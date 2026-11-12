@@ -28,7 +28,7 @@ export function nativeEnvironment(): NodeJS.ProcessEnv {
 export async function prepareNative(root = dataRoot(), signal?: AbortSignal): Promise<string> {
   if (process.platform !== "darwin") throw new Error("Paseo Menu Bar 仅支持 macOS。");
   const hash = createHash("sha256")
-    .update(`paseo-menubar-0.1.0-macos13-swift5\0${nativeSource}`)
+    .update(`paseo-menubar-0.1.1-macos13-swift5\0${nativeSource}`)
     .digest("hex")
     .slice(0, 20);
   const app = join(root, `native-${hash}-${process.arch}.app`);
@@ -57,7 +57,7 @@ export async function prepareNative(root = dataRoot(), signal?: AbortSignal): Pr
 <key>CFBundleIdentifier</key><string>sh.paseo.menubar</string>
 <key>CFBundleName</key><string>Paseo Menu Bar</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.1.0</string>
+<key>CFBundleShortVersionString</key><string>0.1.1</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
 <key>NSHighResolutionCapable</key><true/>

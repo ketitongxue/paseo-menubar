@@ -13,8 +13,13 @@ export function cleanText(value: string, limit = 120): string {
     .join("");
 }
 
-export function taskFromAgent(agent: PaseoAgent, serverId?: string): MenuTask | null {
-  if (agent.archivedAt || agent.internal || agent.status === "closed") return null;
+export function taskFromAgent(
+  agent: PaseoAgent & { background?: boolean },
+  serverId?: string,
+): MenuTask | null {
+  // Newer hosts expose background helpers separately from the legacy internal marker.
+  if (agent.archivedAt || agent.internal || agent.background || agent.status === "closed")
+    return null;
   const attention = agent.requiresAttention === true ? agent.attentionReason : null;
   const status =
     agent.pendingPermissions.length > 0 || attention === "permission"

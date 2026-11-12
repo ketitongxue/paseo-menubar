@@ -23,7 +23,7 @@ export default function contribute(server: PluginServerContext) {
     await Promise.all([observer.ensure(paseo), bridge.start()]);
     return { supported: true };
   });
-  // Legacy event names are supported by both 0.14 and 0.15. These hooks do not
+  // Legacy event names remain supported across 0.14–0.16. These hooks do not
   // wait for, veto, or modify operations; they only obtain the server-owned API.
   const removers = (
     [

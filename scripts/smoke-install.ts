@@ -1,11 +1,12 @@
 import { execFile, spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { createHostClient } from "@getpaseo/client/node";
-import { readLocalCredentialForTarget } from "paseo-server-015/daemon-control";
 import pino from "pino";
+import { paseoTargets, serverDirectory } from "./paseo-targets";
 
 // Explicit developer action. Never selects or restarts the production daemon.
 const revision = process.argv[2];
@@ -13,7 +14,16 @@ if (process.platform !== "darwin" || !/^[a-f0-9]{40}$/.test(revision ?? ""))
   throw new Error("Provide an exact public release commit on a graphical Mac.");
 const command =
   process.env.PASEO_TEST_CLI || "/Applications/Paseo.app/Contents/Resources/bin/paseo";
-const expectedVersion = "0.15.0-beta.1";
+const expectedVersion = process.argv[3] ?? "0.16.0-beta.2";
+const target = paseoTargets.find((item) => item.version === expectedVersion);
+if (!target) throw new Error("Expected version must name an explicitly tested Paseo runtime.");
+const requireHost = createRequire(join(serverDirectory(target), "package.json"));
+const { createHostClient } = (await import(
+  pathToFileURL(requireHost.resolve("@getpaseo/client/node")).href
+)) as typeof import("@getpaseo/client/node");
+const { readLocalCredentialForTarget } = (await import(
+  `${target.package}/daemon-control`
+)) as typeof import("paseo-server-016-beta2/daemon-control");
 const source = "https://github.com/ketitongxue/paseo-menubar.git";
 const root = await realpath(await mkdtemp(join(tmpdir(), "paseo-menubar-install-")));
 const user = join(root, "user");
@@ -139,6 +149,7 @@ try {
     source,
     commit: revision,
     daemonVersion: expectedVersion,
+    clientVersion: expectedVersion,
     installation: "running",
     observationInitialized: true,
     nativeHelperRunning: true,
@@ -148,7 +159,10 @@ try {
     productionDaemonTouched: false,
   };
   await mkdir(".research", { recursive: true });
-  await writeFile(".research/public-install-result.json", `${JSON.stringify(result, null, 2)}\n`);
+  await writeFile(
+    `.research/public-install-result-${expectedVersion}.json`,
+    `${JSON.stringify(result, null, 2)}\n`,
+  );
   console.log(JSON.stringify(result));
 } catch (error) {
   await mkdir(".research", { recursive: true });

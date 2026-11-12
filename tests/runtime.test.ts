@@ -1,5 +1,6 @@
 import { fork } from "node:child_process";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -7,12 +8,13 @@ import pino from "pino";
 import { describe, expect, it, vi } from "vitest";
 import type { compileDirectoryPlugin as BaselineCompiler } from "../node_modules/@getpaseo/server/dist/server/server/plugins/compiler-build.js";
 import type { PluginRuntime as BaselineRuntime } from "../node_modules/@getpaseo/server/dist/server/server/plugins/runtime.js";
+import { hostPackage, paseoTargets, serverDirectory } from "../scripts/paseo-targets";
 import type { MenuFrame } from "../shared/state";
 import { agent, page } from "./helpers";
 
 const hosts = await Promise.all(
-  ["@getpaseo/server", "paseo-server-015"].map(async (name) => {
-    const directory = resolve("node_modules", name);
+  paseoTargets.map(async (target) => {
+    const directory = serverDirectory(target);
     const { version } = JSON.parse(await readFile(join(directory, "package.json"), "utf8"));
     const compiler = await import(
       pathToFileURL(join(directory, "dist/server/server/plugins/compiler-build.js")).href
@@ -20,8 +22,24 @@ const hosts = await Promise.all(
     const runtime = await import(
       pathToFileURL(join(directory, "dist/server/server/plugins/runtime.js")).href
     );
+    const requireHost = createRequire(join(directory, "package.json"));
+    const protocol = await import(
+      pathToFileURL(requireHost.resolve("@getpaseo/protocol/messages")).href
+    );
+    const lifecycle = await import(
+      pathToFileURL(join(hostPackage(target, "@getpaseo/plugin"), "dist/server/lifecycle.js")).href
+    );
+    const background = protocol.AgentSnapshotPayloadSchema.parse({
+      ...agent(),
+      id: "background-helper",
+      background: true,
+    });
     return {
       version: version as string,
+      createHook: lifecycle.pluginHookRegistry?.["agent.create.after"]
+        ? "agent.create.after"
+        : "agent.created",
+      backgroundAgent: background.background === true ? background : undefined,
       directory,
       compile: compiler.compileDirectoryPlugin as typeof BaselineCompiler,
       Runtime: runtime.PluginRuntime as typeof BaselineRuntime,
@@ -41,13 +59,13 @@ const files = [
 
 describe.each(hosts)(
   "Paseo $version real compiler and IPC",
-  ({ compile, Runtime, directory, version }) => {
+  ({ compile, Runtime, directory, version, createHook, backgroundAgent }) => {
     it("compiles both actual entries and enforces the supported version range", async () => {
       const result = await compile(process.cwd(), version);
       expect(result.serverBundle?.length).toBeGreaterThan(1000);
       expect(result.clientBundle?.length).toBeGreaterThan(100);
       await expect(compile(process.cwd(), "0.13.2")).rejects.toThrow();
-      await expect(compile(process.cwd(), "0.16.0-beta.1")).rejects.toThrow();
+      await expect(compile(process.cwd(), "0.17.0-beta.1")).rejects.toThrow();
     });
 
     it("compiles an isolated installation without any node_modules", async () => {
@@ -147,10 +165,32 @@ export const prepareNative = async () => ${JSON.stringify(helper)};\n`,
         const snapshot = async () => JSON.parse(await readFile(stateFile, "utf8")) as MenuFrame;
         try {
           await runtime.startPlugin("paseo-menubar", root);
+          // Exercise notification bootstrap with no client RPC first. The actual
+          // host maps this plugin's legacy registration to its modern event name.
+          const notify = runtime.emit.bind(runtime) as (name: string, event: unknown) => void;
+          notify(createHook, {
+            agent: {
+              id: "agent-1",
+              workspaceId: null,
+              parentAgentId: null,
+              provider: "codex",
+              cwd: "/example/project",
+              title: "Synthetic task",
+              background: false,
+              metadata: {},
+            },
+          });
+          await runtime.drainEvents();
+          await vi.waitFor(async () => expect((await snapshot()).counts.running).toBe(1));
           expect(await runtime.invoke("paseo-menubar", "menubar.start", {})).toEqual({
             supported: true,
           });
-          await vi.waitFor(async () => expect((await snapshot()).counts.running).toBe(1));
+          expect(requests.filter((type) => type === "fetch_agents_request")).toHaveLength(1);
+          if (backgroundAgent)
+            send({
+              type: "agent_update",
+              payload: { kind: "upsert", subscriptionId: subId, agent: backgroundAgent },
+            });
           send({
             type: "agent_update",
             payload: {
@@ -161,6 +201,7 @@ export const prepareNative = async () => ${JSON.stringify(helper)};\n`,
           });
           await vi.waitFor(async () => expect((await snapshot()).counts.error).toBe(1));
           expect(JSON.stringify(await snapshot())).not.toContain("SECRET_ERROR_BODY");
+          expect((await snapshot()).tasks).toHaveLength(1);
           expect((await snapshot()).tasks[0].url).toBe("paseo://h/synthetic-host/agent/agent-1");
           send({
             type: "agent_update",
