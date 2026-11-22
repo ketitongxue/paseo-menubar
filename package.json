@@ -1,6 +1,6 @@
 {
   "name": "paseo-menubar",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Live Paseo task status in the native macOS menu bar.",
   "type": "module",
   "license": "MIT",
@@ -58,6 +58,8 @@
     "paseo-server-015-stable": "npm:@getpaseo/server@0.15.4",
     "paseo-server-016-beta1": "npm:@getpaseo/server@0.16.0-beta.1",
     "paseo-server-016-beta2": "npm:@getpaseo/server@0.16.0-beta.2",
+    "paseo-server-0162": "npm:@getpaseo/server@0.16.2",
+    "paseo-server-0171": "npm:@getpaseo/server@0.17.1",
     "pino": "10.4.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",

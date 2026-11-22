@@ -56,14 +56,14 @@ describe("native bridge lifecycle", () => {
     expect(JSON.parse(lines[1]).message).toBe("999");
   });
 
-  it("only accepts bounded refresh/hide commands and honors explicit hiding", async () => {
+  it("only accepts bounded refresh/refreshUsage/hide commands and honors explicit hiding", async () => {
     const { bridge, children, onCommand, launch } = create();
     await bridge.start();
     const child = children[0];
     child.stdout.write('not json\n{"type":"exec","command":"rm -rf /"}\n');
     child.stdout.write('{"type":"ref');
-    child.stdout.write('resh"}\n{"type":"hide"}\n');
-    expect(onCommand.mock.calls).toEqual([["refresh"], ["hide"]]);
+    child.stdout.write('resh"}\n{"type":"refreshUsage"}\n{"type":"hide"}\n');
+    expect(onCommand.mock.calls).toEqual([["refresh"], ["refreshUsage"], ["hide"]]);
     child.emit("close", 0);
     await bridge.start();
     expect(launch).toHaveBeenCalledTimes(1);

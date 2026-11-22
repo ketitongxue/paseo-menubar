@@ -14,7 +14,7 @@ if (process.platform !== "darwin" || !/^[a-f0-9]{40}$/.test(revision ?? ""))
   throw new Error("Provide an exact public release commit on a graphical Mac.");
 const command =
   process.env.PASEO_TEST_CLI || "/Applications/Paseo.app/Contents/Resources/bin/paseo";
-const expectedVersion = process.argv[3] ?? "0.16.0-beta.2";
+const expectedVersion = process.argv[3] ?? "0.17.1";
 const target = paseoTargets.find((item) => item.version === expectedVersion);
 if (!target) throw new Error("Expected version must name an explicitly tested Paseo runtime.");
 const requireHost = createRequire(join(serverDirectory(target), "package.json"));
@@ -23,7 +23,7 @@ const { createHostClient } = (await import(
 )) as typeof import("@getpaseo/client/node");
 const { readLocalCredentialForTarget } = (await import(
   `${target.package}/daemon-control`
-)) as typeof import("paseo-server-016-beta2/daemon-control");
+)) as typeof import("paseo-server-0171/daemon-control");
 const source = "https://github.com/ketitongxue/paseo-menubar.git";
 const root = await realpath(await mkdtemp(join(tmpdir(), "paseo-menubar-install-")));
 const user = join(root, "user");

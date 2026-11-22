@@ -83,10 +83,94 @@ describe.skipIf(process.platform !== "darwin")(
       expect(JSON.parse(result.output)).toMatchObject({ title: "P 离线", detail: "同步失败" });
     });
 
-    it("rejects unknown protocol versions and out-of-range counts", async () => {
+    it("rejects unknown protocol versions, out-of-range counts, and invalid usage payloads", async () => {
       const frame = makeFrame([], "connected");
       expect((await check({ ...frame, version: 99 })).code).toBe(1);
       expect((await check({ ...frame, counts: { ...frame.counts, running: -1 } })).code).toBe(1);
+      expect((await check({ ...frame, usage: { ...frame.usage, status: "bogus" } })).code).toBe(1);
+      expect(
+        (
+          await check({
+            ...frame,
+            usage: {
+              ...frame.usage,
+              status: "ready",
+              accounts: [
+                {
+                  id: "codex",
+                  name: "Codex",
+                  status: "available",
+                  plan: "plus",
+                  message: "",
+                  windows: [
+                    {
+                      id: "5h",
+                      label: "5-hour",
+                      shortLabel: "5h",
+                      summary: true,
+                      usedPct: 120,
+                      remainingPct: 0,
+                      resetsAt: null,
+                      tone: "danger",
+                    },
+                  ],
+                  balances: [],
+                },
+              ],
+            },
+          })
+        ).code,
+      ).toBe(1);
+    });
+
+    it("accepts valid usage frames while keeping the menu bar badge focused on task status", async () => {
+      const task = taskFromAgent(agent({ status: "running" }));
+      const frame = makeFrame(task ? [task] : [], "connected", "", Date.now(), 100, {
+        status: "ready",
+        message: "",
+        fetchedAt: Date.now(),
+        omitted: 0,
+        accounts: [
+          {
+            id: "codex",
+            name: "Codex (user@example.com)",
+            status: "available",
+            plan: "plus",
+            message: "",
+            windows: [
+              {
+                id: "five_hour",
+                label: "5-hour",
+                shortLabel: "5h",
+                summary: true,
+                usedPct: 20,
+                remainingPct: 80,
+                resetsAt: Date.now() + 3_600_000,
+                tone: "ok",
+              },
+            ],
+            balances: [
+              {
+                id: "credits",
+                label: "Credits",
+                used: null,
+                remaining: 0,
+                limit: null,
+                unit: "credits",
+                resetsAt: null,
+                tone: "danger",
+              },
+            ],
+          },
+        ],
+      });
+      const result = await check(frame);
+      expect(result.code).toBe(0);
+      expect(JSON.parse(result.output)).toMatchObject({
+        title: "P 1",
+        usageStatus: "ready",
+        usageAccounts: 1,
+      });
     });
 
     it("reuses an immutable executable cache and keeps the data root private", async () => {

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { NativeBridge } from "../server/bridge";
 import { makeFrame } from "../server/model";
 import { prepareNative } from "../server/native";
-import type { MenuTask } from "../shared/state";
+import type { MenuTask, MenuUsage } from "../shared/state";
 
 // Synthetic data only; no daemon connection, credentials, or production plugin installation.
 const root = await mkdtemp(join(tmpdir(), "paseo-menubar-demo-"));
@@ -36,7 +36,46 @@ const update = () => {
     startedAt: Date.now() - 35_000,
     url: null,
   };
-  bridge.send(makeFrame([task], "connected"));
+  const now = Date.now();
+  const usage: MenuUsage = {
+    status: "ready",
+    message: "",
+    fetchedAt: now,
+    omitted: 0,
+    accounts: [
+      {
+        id: "codex",
+        name: "Codex (demo@example.com)",
+        status: "available",
+        plan: "plus",
+        message: "",
+        windows: [
+          {
+            id: "five_hour",
+            label: "5-hour",
+            shortLabel: "5h",
+            summary: true,
+            usedPct: 12,
+            remainingPct: 88,
+            resetsAt: now + 3 * 3_600_000,
+            tone: "ok",
+          },
+          {
+            id: "weekly",
+            label: "Weekly",
+            shortLabel: "wk",
+            summary: true,
+            usedPct: 45,
+            remainingPct: 55,
+            resetsAt: now + 3 * 86_400_000,
+            tone: "ok",
+          },
+        ],
+        balances: [],
+      },
+    ],
+  };
+  bridge.send(makeFrame([task], "connected", "", now, 100, usage));
   step++;
 };
 try {

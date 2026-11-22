@@ -65,7 +65,7 @@ describe.each(hosts)(
       expect(result.serverBundle?.length).toBeGreaterThan(1000);
       expect(result.clientBundle?.length).toBeGreaterThan(100);
       await expect(compile(process.cwd(), "0.13.2")).rejects.toThrow();
-      await expect(compile(process.cwd(), "0.17.0-beta.1")).rejects.toThrow();
+      await expect(compile(process.cwd(), "0.18.0-beta.1")).rejects.toThrow();
     });
 
     it("compiles an isolated installation without any node_modules", async () => {
@@ -132,7 +132,7 @@ export const prepareNative = async () => ${JSON.stringify(helper)};\n`,
                       serverId: "synthetic-host",
                       hostname: "test",
                       version,
-                      features: { ownedSubscriptions: true },
+                      features: { ownedSubscriptions: true, providerUsageList: true },
                     },
                   });
                 const message = frame.message;
@@ -145,6 +145,47 @@ export const prepareNative = async () => ${JSON.stringify(helper)};\n`,
                       ...page([agent({ status: "running" })]),
                       requestId: message.requestId,
                       subscriptionId: subId,
+                    },
+                  });
+                if (message.type === "provider.usage.list.request")
+                  send({
+                    type: "provider.usage.list.response",
+                    payload: {
+                      requestId: message.requestId,
+                      fetchedAt: "2026-11-22T09:00:00.000Z",
+                      providers: [
+                        {
+                          providerId: "codex",
+                          displayName: "Codex (demo@example.com)",
+                          status: "available",
+                          planLabel: "plus",
+                          windows: [
+                            {
+                              id: "five_hour",
+                              label: "5-hour",
+                              shortLabel: "5h",
+                              summary: true,
+                              usedPct: 10,
+                              remainingPct: 90,
+                              resetsAt: "2026-11-22T14:00:00.000Z",
+                              tone: "ok",
+                            },
+                          ],
+                          balances: [],
+                          details: [],
+                          error: null,
+                        },
+                        {
+                          providerId: "broken",
+                          displayName: "Broken",
+                          status: "error",
+                          planLabel: null,
+                          windows: [],
+                          balances: [],
+                          details: [],
+                          error: "SECRET_USAGE_ERROR",
+                        },
+                      ],
                     },
                   });
                 if (message.type === "subscription.release.request") {
@@ -182,10 +223,14 @@ export const prepareNative = async () => ${JSON.stringify(helper)};\n`,
           });
           await runtime.drainEvents();
           await vi.waitFor(async () => expect((await snapshot()).counts.running).toBe(1));
+          await vi.waitFor(async () => expect((await snapshot()).usage.status).toBe("ready"));
+          expect((await snapshot()).usage.accounts).toHaveLength(2);
+          expect(JSON.stringify(await snapshot())).not.toContain("SECRET_USAGE_ERROR");
           expect(await runtime.invoke("paseo-menubar", "menubar.start", {})).toEqual({
             supported: true,
           });
           expect(requests.filter((type) => type === "fetch_agents_request")).toHaveLength(1);
+          expect(requests.filter((type) => type === "provider.usage.list.request")).toHaveLength(1);
           if (backgroundAgent)
             send({
               type: "agent_update",
@@ -214,7 +259,11 @@ export const prepareNative = async () => ${JSON.stringify(helper)};\n`,
           expect(() => process.kill(pid, 0)).toThrow();
           expect(
             requests.every((type) =>
-              ["fetch_agents_request", "subscription.release.request"].includes(type),
+              [
+                "fetch_agents_request",
+                "subscription.release.request",
+                "provider.usage.list.request",
+              ].includes(type),
             ),
           ).toBe(true);
         } finally {

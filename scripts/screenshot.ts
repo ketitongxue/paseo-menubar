@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { makeFrame } from "../server/model";
 import { nativeEnvironment } from "../server/native";
-import type { MenuTask } from "../shared/state";
+import type { MenuTask, MenuUsage } from "../shared/state";
 
 if (process.platform !== "darwin") throw new Error("The native preview requires macOS.");
 const root = await mkdtemp(join(tmpdir(), "paseo-menubar-preview-"));
@@ -111,7 +111,105 @@ try {
       url: `paseo://h/synthetic-host/agent/synthetic-${i}`,
     }),
   );
-  child.stdin?.write(`${JSON.stringify(makeFrame(tasks, "connected"))}\n`);
+  const usage: MenuUsage = {
+    status: "ready",
+    message: "",
+    fetchedAt: now,
+    omitted: 0,
+    accounts: [
+      {
+        id: "codex",
+        name: "Codex (demo@example.com)",
+        status: "available",
+        plan: "plus",
+        message: "",
+        windows: [
+          {
+            id: "five_hour",
+            label: "5-hour",
+            shortLabel: "5h",
+            summary: true,
+            usedPct: 15,
+            remainingPct: 85,
+            resetsAt: now + 3 * 3_600_000,
+            tone: "ok",
+          },
+          {
+            id: "weekly",
+            label: "Weekly",
+            shortLabel: "wk",
+            summary: true,
+            usedPct: 45,
+            remainingPct: 55,
+            resetsAt: now + 3 * 86_400_000,
+            tone: "ok",
+          },
+        ],
+        balances: [],
+      },
+      {
+        id: "antigravity",
+        name: "Antigravity",
+        status: "available",
+        plan: null,
+        message: "",
+        windows: [
+          {
+            id: "gemini-weekly",
+            label: "Gemini · Weekly",
+            shortLabel: "Gemini wk",
+            summary: true,
+            usedPct: 12,
+            remainingPct: 88,
+            resetsAt: now + 5 * 86_400_000,
+            tone: "ok",
+          },
+          {
+            id: "3p-weekly",
+            label: "Claude and GPT · Weekly",
+            shortLabel: "Claude wk",
+            summary: true,
+            usedPct: 0,
+            remainingPct: 100,
+            resetsAt: null,
+            tone: "ok",
+          },
+        ],
+        balances: [],
+      },
+      {
+        id: "claude",
+        name: "Claude (team@example.com)",
+        status: "available",
+        plan: "max",
+        message: "",
+        windows: [
+          {
+            id: "five_hour",
+            label: "5-hour",
+            shortLabel: "5h",
+            summary: true,
+            usedPct: 82,
+            remainingPct: 18,
+            resetsAt: now + 2 * 3_600_000,
+            tone: "warning",
+          },
+          {
+            id: "weekly",
+            label: "Weekly",
+            shortLabel: "wk",
+            summary: true,
+            usedPct: 93,
+            remainingPct: 7,
+            resetsAt: now + 2 * 86_400_000,
+            tone: "danger",
+          },
+        ],
+        balances: [],
+      },
+    ],
+  };
+  child.stdin?.write(`${JSON.stringify(makeFrame(tasks, "connected", "", now, 100, usage))}\n`);
   timeout = setTimeout(() => child?.kill("SIGKILL"), 8000);
   await new Promise<void>((done, fail) => {
     child?.once("error", fail);

@@ -1,7 +1,9 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { NativeBridge } from "./server/bridge";
 import { TaskObserver } from "./server/observer";
+import { UsageObserver } from "./server/usage";
 import { startMenubar } from "./shared/contracts";
+import type { MenuFrame, MenuUsage } from "./shared/state";
 
 export default function contribute(server: PluginServerContext) {
   if (process.platform !== "darwin") {
@@ -9,21 +11,39 @@ export default function contribute(server: PluginServerContext) {
     console.info("Paseo Menu Bar: 请安装在有图形登录会话的 macOS daemon 上。");
     return () => {};
   }
-  const observer = new TaskObserver((frame) => bridge.send(frame));
+  let taskFrame: MenuFrame;
+  let usageState: MenuUsage;
   const bridge = new NativeBridge({
     onCommand(command) {
-      if (command === "refresh") void observer.refresh().catch(() => {});
+      if (command === "refresh") {
+        void observer.refresh().catch(() => {});
+        void usage.refresh().catch(() => {});
+      } else if (command === "refreshUsage") {
+        void usage.refresh().catch(() => {});
+      }
     },
   });
-  bridge.send(observer.snapshot());
+  const publish = () => bridge.send({ ...taskFrame, usage: usageState });
+  const observer = new TaskObserver((frame) => {
+    taskFrame = frame;
+    publish();
+  });
+  const usage = new UsageObserver((next) => {
+    usageState = next;
+    publish();
+  });
+  taskFrame = observer.snapshot();
+  usageState = usage.snapshot();
+  publish();
   void bridge.start().catch(() => {
     console.error("Paseo Menu Bar: 原生组件启动失败；请确认已安装 Apple Command Line Tools。");
   });
   server.handle(startMenubar, async (_, { paseo }) => {
     await Promise.all([observer.ensure(paseo), bridge.start()]);
+    void usage.ensure(paseo).catch(() => {});
     return { supported: true };
   });
-  // Legacy event names remain supported across 0.14–0.16. These hooks do not
+  // Legacy event names remain supported across 0.14–0.17. These hooks do not
   // wait for, veto, or modify operations; they only obtain the server-owned API.
   const removers = (
     [
@@ -40,10 +60,12 @@ export default function contribute(server: PluginServerContext) {
   ).map((name) =>
     server.on(name, (_, { paseo }) => {
       void observer.ensure(paseo).catch(() => {});
+      void usage.ensure(paseo).catch(() => {});
     }),
   );
   return async () => {
     for (const remove of removers) remove();
+    usage.close();
     await Promise.all([observer.close(), bridge.close()]);
   };
 }

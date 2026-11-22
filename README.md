@@ -22,7 +22,8 @@
 - 实时 SDK 订阅，约 100 ms 合并一次更新；持续高频事件不会饿死界面。每 30 秒重建订阅并对账，发现断线或遗漏。
 - 区分 **运行中 / 启动中 / 等待授权 / 异常 / 已完成待查看 / 空闲**。等待授权优先于底层 `running`；不会把所有 idle 会话误报为完成。
 - 下拉按「需要处理」「进行中」「已完成」分组；显示任务标题、provider、项目目录名、运行时长；点击跳转到该主机的对应 Paseo 会话。
-- 可选显示空闲会话，手动同步，打开 Paseo，临时隐藏菜单栏。下拉菜单在打开时取最新状态；展开期间不重排条目，以免误点。
+- 内置「账号额度」区块，通过 Paseo daemon 统一额度接口自动汇总所有已启用的内置及插件额度源（如 Codex、Antigravity、Claude、多账号插件等）；下拉平铺展示各账号摘要窗口，悬停展开子菜单查看全部窗口、重置时间与余额。启动后自动查询并每 5 分钟后台刷新，也支持菜单内手动「刷新额度」（快捷键 `⌘U`）。
+- 可选显示空闲会话，手动同步，刷新额度，打开 Paseo，临时隐藏菜单栏。下拉菜单在打开时取最新状态；展开期间不重排条目，以免误点。
 - 支持目录分页；菜单最多列出 100 个会话，但计数覆盖完整的公开、未归档任务目录。归档、已关闭、internal 和新版 background helper 不计入。
 - 断线明确显示「离线」和过期提示；保留上次状态，不伪装成成功或 0 个任务。
 - 插件禁用、卸载、重载时停止订阅及原生进程；父进程死亡时通过 stdin EOF 退出，不残留菜单栏。原生组件崩溃最多自动重试 3 次。
@@ -32,7 +33,7 @@
 ## 要求
 
 - **macOS 13+**，本机有图形登录会话。Apple Silicon 已实测；Intel 有本机编译路径，尚未经 Intel 硬件验证。
-- daemon 和连接客户端均为 **Paseo >=0.14.0-beta.1 <0.17.0**。v0.1.1 适配当前 0.16.0-beta.2；真实 SDK 类型、编译器与 IPC 测试覆盖 0.14.0-beta.1、0.15.0-beta.1、0.15.4、0.16.0-beta.1、0.16.0-beta.2，不放行未验证的 0.17+。
+- daemon 和连接客户端均为 **Paseo >=0.14.0-beta.1 <0.18.0**。v0.1.2 适配当前 0.17.1；真实 SDK 类型、编译器与 IPC 测试覆盖 0.14.0-beta.1、0.15.0-beta.1、0.15.4、0.16.0-beta.1、0.16.0-beta.2、0.16.2、0.17.1，不放行未验证的 0.18+。
 - Apple Command Line Tools（`xcrun swiftc`）。没有时，由你运行 `xcode-select --install` 安装。首次启用编译原生小组件，后续复用源码哈希 + CPU 架构缓存。
 - 开发检查使用 Node.js >=22.12 和 npm 11.19.1（见 `packageManager`）；源码安装没有额外的运行时 npm 依赖，SDK 和 Zod 由 Paseo 提供。npm 10 无法正确消费该开发依赖树，CI 对 Node 22/24 都显式使用 npm 11.19.1。
 
@@ -59,17 +60,17 @@ PASEO="/Applications/Paseo.app/Contents/Resources/bin/paseo"
 
 如果第三方插件尚未启用，请先在 Paseo 插件设置中确认信任并启用。安装后连接一次该主机的 Paseo 客户端，即可看到菜单栏。
 
-公开源码：[ketitongxue/paseo-menubar](https://github.com/ketitongxue/paseo-menubar)。[官方市场](https://paseo.sh/plugins/ketitongxue/menubar) 已收录 v0.1.0；每次 Git 版本更新仍需重新审核。市场安装跟随已批准的提交，不会自动跟随 main。v0.1.1 审核完成前可使用直接 Git 来源：
+公开源码：[ketitongxue/paseo-menubar](https://github.com/ketitongxue/paseo-menubar)。[官方市场](https://paseo.sh/plugins/ketitongxue/menubar) 已收录 v0.1.0；每次 Git 版本更新仍需重新审核。市场安装跟随已批准的提交，不会自动跟随 main。v0.1.2 审核完成前可使用直接 Git 来源：
 
 ```bash
-"$PASEO" plugin install git:ketitongxue/paseo-menubar --ref v0.1.1
+"$PASEO" plugin install git:ketitongxue/paseo-menubar --ref v0.1.2
 ```
 
 这是源码安装地址，不是官方市场安装 ID。
 
 ### 为什么首次需要连接客户端？
 
-Paseo 0.14/0.15/0.16 的服务端 SDK 只在 RPC 或生命周期事件中提供 daemon API。插件在加载时启动菜单栏，通过任意连接客户端的一次自动 RPC 初始化实时订阅；没有客户端时，下一次任务/授权/工作区事件也会初始化。**初始化后订阅属于服务端，关闭客户端窗口不影响继续显示**（前提是 daemon 本身仍在运行）。纯无客户端且无新事件时，菜单栏如实显示等待连接，而不是伪造任务计数。
+Paseo 0.14/0.15/0.16/0.17 的服务端 SDK 只在 RPC 或生命周期事件中提供 daemon API。插件在加载时启动菜单栏，通过任意连接客户端的一次自动 RPC 初始化实时订阅；没有客户端时，下一次任务/授权/工作区事件也会初始化。**初始化后订阅属于服务端，关闭客户端窗口不影响继续显示**（前提是 daemon 本身仍在运行）。纯无客户端且无新事件时，菜单栏如实显示等待连接，而不是伪造任务计数。
 
 临时隐藏菜单栏不停止任务。恢复、更新源码或排查后重新编译：
 
@@ -101,7 +102,7 @@ $PASEO_HOME/menubar/                     # 默认 ~/.paseo/menubar/
 ```
 
 - 新建数据目录 `0700`。任务状态仅驻内存，经父子进程的私有 stdin 管道传递，不写状态文件、不开放监听端口、不向第三方发请求。
-- 原生进程仅接收 ID、清理后的标题、provider、项目目录名、状态、时间及 Paseo 深链接，不接收权限内容、错误正文、绝对工作目录、会话正文或凭据。不会请求 timeline、打开 provider 会话或读取账号认证文件。
+- 原生进程仅接收任务最小展示字段（ID、清理后的标题、provider、项目目录名、状态、时间、Paseo 深链接）以及来自 Paseo daemon 统一额度接口的清理后账号名、套餐标识、窗口百分比/重置时间与余额，不接收权限内容、原始错误正文、绝对工作目录、会话正文或凭据。本插件不会请求 timeline、打开 provider 会话、读取本地账号认证文件或直接向第三方发请求。
 - 原生进程使用最小环境，不继承 provider token、daemon 密钥等 shell 环境变量。
 - 唯一持久化 UI 偏好是系统 `UserDefaults` 的「显示空闲会话」。卸载不删除可复用的原生缓存；确认停用后可自行删除 `menubar` 目录。
 - 安全边界及限制见 [SECURITY.md](SECURITY.md)。分发采用公开 GitHub 源码，不发布 npm；官方市场状态以官方审核与目录为准。
@@ -112,15 +113,15 @@ $PASEO_HOME/menubar/                     # 默认 ~/.paseo/menubar/
 npm run generate       # 修改 native/main.swift 后，更新嵌入的 Swift 源码
 npm run build:native   # 手动编译原生组件，输出可执行文件路径；不启动 GUI
 npm run screenshot     # 仅 macOS；合成数据的原生菜单截图，不捕获其他窗口
-npm run compatibility  # 五个真实版本的 server/client/shared SDK 类型检查
+npm run compatibility  # 七个真实版本的 server/client/shared SDK 类型检查
 npm run check          # 源码一致性、类型、兼容性、lint、测试
 npm pack --dry-run     # 检查发布文件，不安装插件
 ```
 
-验证包括：状态映射/隐私字段过滤、持续事件节流、分页与并发更新/删除、重连替换与过期请求、断线恢复、客户端启动重试、管道背压、原生进程重启/清理、真实 Swift 可执行程序的无界面协议/持续小消息读取测试，以及五版 Paseo 的真实编译器和插件子进程 IPC 测试（包含无客户端 RPC 的生命周期引导）。IPC 测试仅替换 OS GUI 边界，使用临时目录、合成任务及假宿主会话；不会访问生产 daemon 或运行模型任务。
+验证包括：状态映射/隐私字段过滤、持续事件节流、分页与并发更新/删除、重连替换与过期请求、断线恢复、客户端启动重试、管道背压、原生进程重启/清理、真实 Swift 可执行程序的无界面协议/持续小消息读取测试，以及七版 Paseo 的真实编译器和插件子进程 IPC 测试（包含无客户端 RPC 的生命周期引导）。IPC 测试仅替换 OS GUI 边界，使用临时目录、合成任务及假宿主会话；不会访问生产 daemon 或运行模型任务。
 
 ```text
 index.client.tsx → 自动 bootstrap RPC
-index.server.ts  → 生命周期引导 / TaskObserver → 私有 JSONL → Swift/AppKit 菜单栏
-                                            ← refresh / hide
+index.server.ts  → 生命周期引导 / TaskObserver + UsageObserver → 私有 JSONL → Swift/AppKit 菜单栏
+                                                              ← refresh / refreshUsage / hide
 ```

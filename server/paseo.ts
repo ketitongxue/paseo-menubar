@@ -7,3 +7,5 @@ export type PaseoAgent = NonNullable<ReturnType<ReturnType<PaseoApi["agents"]["r
 export type PaseoAgentListOptions = NonNullable<Parameters<PaseoApi["agents"]["list"]>[0]>;
 export type PaseoAgentListResult = Awaited<ReturnType<PaseoApi["agents"]["list"]>>;
 export type AgentSubscription = NonNullable<PaseoAgentListResult["subscription"]>;
+export type PaseoProviderUsageResult = Awaited<ReturnType<PaseoApi["providers"]["listUsage"]>>;
+export type PaseoProviderUsage = PaseoProviderUsageResult["providers"][number];

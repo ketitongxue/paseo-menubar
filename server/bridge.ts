@@ -8,7 +8,7 @@ interface Options {
   prepare?: typeof prepareNative;
   spawn?: typeof spawn;
   log?: (message: string) => void;
-  onCommand?: (command: "refresh" | "hide") => void;
+  onCommand?: (command: "refresh" | "refreshUsage" | "hide") => void;
 }
 
 /** Owns the helper, bounded JSON-lines transport, backpressure, and teardown. */
@@ -83,7 +83,11 @@ export class NativeBridge {
         try {
           const command = JSON.parse(line);
           if (command?.type === "hide") this.hidden = true;
-          if (command?.type === "refresh" || command?.type === "hide")
+          if (
+            command?.type === "refresh" ||
+            command?.type === "refreshUsage" ||
+            command?.type === "hide"
+          )
             this.options.onCommand?.(command.type);
         } catch {
           // Ignore invalid commands; never execute shell strings or arbitrary URLs.
